@@ -14,7 +14,14 @@ import {
     update
 } from './../repositories/cardRepository.js';
 
-import { notFound, conflict, gone, unprocessableEntity, unauthorized } from './../middlewares/errorHandlerMiddleware.js';
+import { 
+    notFound, 
+    conflict, 
+    gone, 
+    unprocessableEntity, 
+    unauthorized, 
+    inactive 
+} from './../middlewares/errorHandlerMiddleware.js';
 
 dotenv.config();
 
@@ -122,7 +129,41 @@ function generateEncryptedPassword(password:string){
     return encryptedPassword;
 }
 
+async function getEmployeeCards(employeeId:number, password:string, type:TransactionTypes){
+    const cardByEmployee = await findByTypeAndEmployeeId(type, employeeId);
+    const encryptedPassword = cardByEmployee.password;
+    if( !encryptedPassword ) throw inactive();
+
+    const validate = validatePassword(password, encryptedPassword);
+    if( !validate ) throw unauthorized();
+
+    return {}
+}
+
+function validatePassword(password:string, encryptedPassword:string){
+    if(bcrypt.compareSync(password, encryptedPassword)) return true;
+    return false;
+}
+
+async function blockCard(cardId:number, password:string){
+    const card = await findCardBydId(cardId);
+    if(!card) throw notFound();
+
+    const expirateCard = validateExpirationDate(card.expirationDate);
+    if(expirateCard) throw gone();
+
+    const cardBlock = card.isBlocked;
+    if(cardBlock) throw unprocessableEntity();
+
+    const validate =  validatePassword(password, card.password);
+    if( !validate ) throw unauthorized();
+
+    await update(cardId, {isBlocked:true});
+}
+
 export {
     createCard,
-    activateCard
+    activateCard,
+    getEmployeeCards,
+    blockCard
 }

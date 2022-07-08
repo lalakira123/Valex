@@ -19,3 +19,21 @@ export async function activateCard(req:Request, res:Response){
 
     res.sendStatus(204);
 }
+
+export async function getCardByEmployee(req:Request, res:Response){
+    const { id } = req.params;
+    const { password, type } = req.body;
+
+    await cardService.getEmployeeCards(Number(id), password, type);
+
+    res.send();
+}
+
+export async function blockCard(req:Request, res:Response){
+    const { id } = req.params;
+    const { password } = req.body;
+
+    await cardService.blockCard(Number(id), password);
+
+    res.sendStatus(204);
+}

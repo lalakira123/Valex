@@ -5,7 +5,8 @@ const serviceErrorToStatusCode = {
     notFound: 404,
     conflict: 409,
     gone: 410,
-    unprocessableEntity: 422
+    unprocessableEntity: 422,
+    inactive: 403
 };
 
 export function unauthorized(){
@@ -26,6 +27,10 @@ export function gone(){
 
 export function unprocessableEntity(){
     return { type: 'unprocessableEntity' }
+}
+
+export function inactive(){
+    return { type: 'inactive' }
 }
 
 export default async function handleError(error, req:Request, res:Response, next:NextFunction) {
