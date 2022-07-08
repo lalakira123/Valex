@@ -7,13 +7,13 @@ import bcrypt from 'bcrypt';
 
 import { findById } from './../repositories/employeeRepository.js';
 import { 
-    findByTypeAndEmployeeId, 
+    findByTypeAndEmployeeId,
     TransactionTypes, 
     insert, 
     findById as findCardBydId, 
-    update
+    update,
+    find
 } from './../repositories/cardRepository.js';
-
 import { 
     notFound, 
     conflict, 
@@ -129,15 +129,31 @@ function generateEncryptedPassword(password:string){
     return encryptedPassword;
 }
 
-async function getEmployeeCards(employeeId:number, password:string, type:TransactionTypes){
-    const cardByEmployee = await findByTypeAndEmployeeId(type, employeeId);
-    const encryptedPassword = cardByEmployee.password;
-    if( !encryptedPassword ) throw inactive();
+async function getEmployeeCards(employeeId:number, password:string){
+    const cards = await find();
 
-    const validate = validatePassword(password, encryptedPassword);
-    if( !validate ) throw unauthorized();
+    const employeeCards = cards.filter((card) => {
+        return card.employeeId == employeeId;
+    });
+    if( employeeCards.length === 0 ) throw notFound();
 
-    return {}
+    const employeeActiveCards = employeeCards.filter((card) => {
+        return card.password;
+    });
+    if( employeeActiveCards.length === 0 ) throw inactive();
+
+    employeeActiveCards.forEach((card) => {
+        card.securityCode = generateDecryptedSecurityCode(card.securityCode);
+        delete card.id;
+        delete card.employeeId;
+        delete card.password;
+        delete card.isVirtual;
+        delete card.originalCardId;
+        delete card.isBlocked;
+        delete card.type;
+    });
+
+    return employeeActiveCards;
 }
 
 function validatePassword(password:string, encryptedPassword:string){

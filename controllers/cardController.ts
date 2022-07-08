@@ -22,11 +22,11 @@ export async function activateCard(req:Request, res:Response){
 
 export async function getCardByEmployee(req:Request, res:Response){
     const { id } = req.params;
-    const { password, type } = req.body;
+    const { password } = req.body;
 
-    await cardService.getEmployeeCards(Number(id), password, type);
+    const cardsEmployee = await cardService.getEmployeeCards(Number(id), password);
 
-    res.send();
+    res.send(cardsEmployee);
 }
 
 export async function blockCard(req:Request, res:Response){
