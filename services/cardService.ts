@@ -13,6 +13,8 @@ import {
     update,
     find
 } from './../repositories/cardRepository.js';
+import { findByCardId as findChargeByCardId } from './../repositories/rechargeRepository.js';
+import { findByCardId as findPaymentByCardId } from './../repositories/paymentRepository.js';
 import { 
     notFound, 
     conflict, 
@@ -22,6 +24,7 @@ import {
     forbidden
 } from './../middlewares/errorHandlerMiddleware.js';
 import * as serviceUtils from './../utils/serviceUtils.js';
+import { not } from 'joi';
 
 dotenv.config();
 
@@ -148,6 +151,31 @@ async function getEmployeeCards(employeeId:number, password:string){
     return employeeActiveCards;
 }
 
+async function getTransactions(cardId:number){
+    const card = await findCardBydId(cardId);
+    if(!card) throw notFound();
+
+    let amountCharge:number = 0;
+    const charges = await findChargeByCardId(cardId)
+    if(charges.length > 0){
+        charges.forEach((charge) => amountCharge += charge.amount);
+    }
+
+    let amountPayments:number = 0;
+    const payments = await findPaymentByCardId(cardId);
+    if(payments.length > 0){
+        payments.forEach((payment) => amountPayments += payment.amount);
+    }
+
+    const chargeTotal = amountCharge - amountPayments;
+
+    return {
+        balance: chargeTotal,
+        transactions: payments,
+        recharges: charges
+    }
+}
+
 async function blockCard(cardId:number, password:string){
     const card = await findCardBydId(cardId);
     if(!card) throw notFound();
@@ -184,6 +212,7 @@ export {
     createCard,
     activateCard,
     getEmployeeCards,
+    getTransactions,
     blockCard,
     unblockCard
 }

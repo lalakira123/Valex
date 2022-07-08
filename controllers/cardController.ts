@@ -29,6 +29,14 @@ export async function getCardByEmployee(req:Request, res:Response){
     res.send(cardsEmployee);
 }
 
+export async function getTransactionsOfCard(req:Request, res:Response){
+    const { id } = req.params;
+
+    const transactions = await cardService.getTransactions(Number(id));
+
+    res.send(transactions);
+}
+
 export async function blockCard(req:Request, res:Response){
     const { id } = req.params;
     const { password } = req.body;
