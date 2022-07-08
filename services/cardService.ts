@@ -161,9 +161,26 @@ async function blockCard(cardId:number, password:string){
     await update(cardId, {isBlocked:true});
 }
 
+async function unblockCard(cardId:number, password:string){
+    const card = await findCardBydId(cardId);
+    if(!card) throw notFound();
+
+    const expirateCard = validateExpirationDate(card.expirationDate);
+    if(expirateCard) throw gone();
+
+    const cardBlock = card.isBlocked;
+    if(!cardBlock) throw unprocessableEntity();
+
+    const validate = validatePassword(password, card.password);
+    if(!validate) throw unauthorized();
+    
+    await update(cardId, {isBlocked:false});
+}
+
 export {
     createCard,
     activateCard,
     getEmployeeCards,
-    blockCard
+    blockCard,
+    unblockCard
 }
