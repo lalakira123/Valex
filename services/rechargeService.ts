@@ -1,6 +1,6 @@
 import { findById } from '../repositories/cardRepository.js';
 import { insert } from '../repositories/rechargeRepository.js';
-import { gone, inactive, notFound, unprocessableEntity } from './../middlewares/errorHandlerMiddleware.js';
+import { gone, forbidden, notFound, unprocessableEntity } from './../middlewares/errorHandlerMiddleware.js';
 import * as serviceUtils from './../utils/serviceUtils.js';
 
 async function rechargeCard(cardId:number, amount:number){
@@ -8,7 +8,7 @@ async function rechargeCard(cardId:number, amount:number){
 
     const card = await findById(cardId);
     if(!card) throw notFound();
-    if(!card.password) throw inactive();
+    if(!card.password) throw forbidden();
 
     const expirateCard = serviceUtils.validateExpirationDate(card.expirationDate);
     if(expirateCard) throw gone();

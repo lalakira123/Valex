@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import bcrypt from "bcrypt";
 
 function validateExpirationDate(expirationDate:string){
     const expirationDateDay = `01/${expirationDate}`;
@@ -8,6 +9,12 @@ function validateExpirationDate(expirationDate:string){
     return false;
 }
 
+function validatePassword(password:string, encryptedPassword:string){
+    if(bcrypt.compareSync(password, encryptedPassword)) return true;
+    return false;
+}
+
 export {
-    validateExpirationDate
+    validateExpirationDate,
+    validatePassword
 }

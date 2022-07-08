@@ -19,7 +19,7 @@ import {
     gone, 
     unprocessableEntity, 
     unauthorized, 
-    inactive 
+    forbidden
 } from './../middlewares/errorHandlerMiddleware.js';
 import * as serviceUtils from './../utils/serviceUtils.js';
 
@@ -132,7 +132,7 @@ async function getEmployeeCards(employeeId:number, password:string){
     const employeeActiveCards = employeeCards.filter((card) => {
         return card.password;
     });
-    if( employeeActiveCards.length === 0 ) throw inactive();
+    if( employeeActiveCards.length === 0 ) throw forbidden();
 
     employeeActiveCards.forEach((card) => {
         card.securityCode = generateDecryptedSecurityCode(card.securityCode);
@@ -148,11 +148,6 @@ async function getEmployeeCards(employeeId:number, password:string){
     return employeeActiveCards;
 }
 
-function validatePassword(password:string, encryptedPassword:string){
-    if(bcrypt.compareSync(password, encryptedPassword)) return true;
-    return false;
-}
-
 async function blockCard(cardId:number, password:string){
     const card = await findCardBydId(cardId);
     if(!card) throw notFound();
@@ -163,8 +158,8 @@ async function blockCard(cardId:number, password:string){
     const cardBlock = card.isBlocked;
     if(cardBlock) throw unprocessableEntity();
 
-    const validate =  validatePassword(password, card.password);
-    if( !validate ) throw unauthorized();
+    const validatePassword =  serviceUtils.validatePassword(password, card.password);
+    if( !validatePassword ) throw unauthorized();
 
     await update(cardId, {isBlocked:true});
 }
@@ -179,8 +174,8 @@ async function unblockCard(cardId:number, password:string){
     const cardBlock = card.isBlocked;
     if(!cardBlock) throw unprocessableEntity();
 
-    const validate = validatePassword(password, card.password);
-    if(!validate) throw unauthorized();
+    const validatePassword = serviceUtils.validatePassword(password, card.password);
+    if(!validatePassword) throw unauthorized();
     
     await update(cardId, {isBlocked:false});
 }
