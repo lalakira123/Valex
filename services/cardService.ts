@@ -4,7 +4,6 @@ import Cryptr from 'cryptr';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 
-
 import { findById } from './../repositories/employeeRepository.js';
 import { 
     findByTypeAndEmployeeId,
@@ -22,6 +21,7 @@ import {
     unauthorized, 
     inactive 
 } from './../middlewares/errorHandlerMiddleware.js';
+import * as serviceUtils from './../utils/serviceUtils.js';
 
 dotenv.config();
 
@@ -101,7 +101,7 @@ async function activateCard(cardId:number, securityCode:string, password:string)
     const decryptedSecurityCode = generateDecryptedSecurityCode(encryptedSecurityCode);
     if(decryptedSecurityCode !== securityCode) throw unauthorized();
 
-    const expireCard = validateExpirationDate(card.expirationDate);
+    const expireCard = serviceUtils.validateExpirationDate(card.expirationDate);
     if(expireCard) throw gone();
 
     const encryptedPassword = generateEncryptedPassword(password);
@@ -113,14 +113,6 @@ function generateDecryptedSecurityCode(encryptedSecurityCode:string){
     const cryptr = new Cryptr(process.env.SECRET_KEY);
     const decryptedSecurityCode = cryptr.decrypt(encryptedSecurityCode);
     return decryptedSecurityCode;
-}
-
-function validateExpirationDate(expirationDate:string){
-    const expirationDateDay = `01/${expirationDate}`;
-    const differenceDates = dayjs(expirationDateDay, 'DD/MM/YY').diff(dayjs().format('DD/MM/YY'), 'month'); 
-
-    if(differenceDates <= 0) return true;
-    return false;
 }
 
 function generateEncryptedPassword(password:string){
@@ -165,7 +157,7 @@ async function blockCard(cardId:number, password:string){
     const card = await findCardBydId(cardId);
     if(!card) throw notFound();
 
-    const expirateCard = validateExpirationDate(card.expirationDate);
+    const expirateCard = serviceUtils.validateExpirationDate(card.expirationDate);
     if(expirateCard) throw gone();
 
     const cardBlock = card.isBlocked;
@@ -181,7 +173,7 @@ async function unblockCard(cardId:number, password:string){
     const card = await findCardBydId(cardId);
     if(!card) throw notFound();
 
-    const expirateCard = validateExpirationDate(card.expirationDate);
+    const expirateCard = serviceUtils.validateExpirationDate(card.expirationDate);
     if(expirateCard) throw gone();
 
     const cardBlock = card.isBlocked;
