@@ -2,11 +2,19 @@ import dayjs from 'dayjs';
 import { faker } from '@faker-js/faker';
 import Cryptr from 'cryptr';
 import dotenv from 'dotenv';
+import bcrypt from 'bcrypt';
+
 
 import { findById } from './../repositories/employeeRepository.js';
-import { findByTypeAndEmployeeId, TransactionTypes, insert } from './../repositories/cardRepository.js';
+import { 
+    findByTypeAndEmployeeId, 
+    TransactionTypes, 
+    insert, 
+    findById as findCardBydId, 
+    update
+} from './../repositories/cardRepository.js';
 
-import { notFound, conflict } from './../middlewares/errorHandlerMiddleware.js';
+import { notFound, conflict, gone, unprocessableEntity, unauthorized } from './../middlewares/errorHandlerMiddleware.js';
 
 dotenv.config();
 
@@ -76,6 +84,45 @@ function generateEncryptedSecurityCode(securityCode:string){
     return encryptedSecurityCode;
 }
 
+async function activateCard(cardId:number, securityCode:string, password:string){
+    const card = await findCardBydId(cardId);
+    if(!card) throw notFound();
+    if(card.password) throw conflict();
+    if(password.length !== 4) throw unprocessableEntity();   
+
+    const encryptedSecurityCode = card.securityCode;
+    const decryptedSecurityCode = generateDecryptedSecurityCode(encryptedSecurityCode);
+    if(decryptedSecurityCode !== securityCode) throw unauthorized();
+
+    const expireCard = validateExpirationDate(card.expirationDate);
+    if(expireCard) throw gone();
+
+    const encryptedPassword = generateEncryptedPassword(password);
+
+    await update(cardId, {password:encryptedPassword});
+}
+
+function generateDecryptedSecurityCode(encryptedSecurityCode:string){
+    const cryptr = new Cryptr(process.env.SECRET_KEY);
+    const decryptedSecurityCode = cryptr.decrypt(encryptedSecurityCode);
+    return decryptedSecurityCode;
+}
+
+function validateExpirationDate(expirationDate:string){
+    const expirationDateDay = `01/${expirationDate}`;
+    const differenceDates = dayjs(expirationDateDay, 'DD/MM/YY').diff(dayjs().format('DD/MM/YY'), 'month'); 
+
+    if(differenceDates <= 0) return true;
+    return false;
+}
+
+function generateEncryptedPassword(password:string){
+    const SALT = 10;
+    const encryptedPassword = bcrypt.hashSync(password, SALT);
+    return encryptedPassword;
+}
+
 export {
-    createCard
+    createCard,
+    activateCard
 }
